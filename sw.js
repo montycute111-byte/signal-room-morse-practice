@@ -1,4 +1,4 @@
-const CACHE='signal-room-v7';
+const CACHE='signal-room-v8';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.json','./icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
