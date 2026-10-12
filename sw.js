@@ -1,5 +1,5 @@
-const CACHE = 'straight-key-v1';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './icon.svg'];
+const CACHE = 'dual-paddle-v1';
+const ASSETS = ['./', './index.html', './styles.css', './paddle.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
