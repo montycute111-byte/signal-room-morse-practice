@@ -7,7 +7,7 @@
     <meta name="description" content="A Morse code practice station with a straight key and dual paddle." />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=key-tabs-v1" />
+    <link rel="stylesheet" href="styles.css?v=key-tabs-v2" />
     <link rel="stylesheet" href="paddle.css" />
     <title>Morse Keys . Straight + Dual Paddle</title>
   </head>
@@ -31,6 +31,7 @@
       </nav>
 
       <section class="console-grid" aria-label="Morse key practice station">
+        <div class="mode-stage">
         <section id="straightPanel" class="key-panel panel mode-panel straight-key-panel" role="tabpanel" aria-labelledby="straightTab">
           <div class="panel-topline"><span class="panel-label">STRAIGHT KEY</span><span class="panel-code">SK-01 / HOLD TO SOUND</span></div>
           <div class="key-stage straight-stage">
@@ -60,6 +61,7 @@
           </div>
           <div class="input-hints"><span><kbd>D</kbd> hold dit</span><span><kbd>K</kbd> hold dah</span><span>both = alternate</span></div>
         </section>
+        </div>
 
         <aside class="control-column">
           <section class="control-panel panel">
@@ -84,6 +86,6 @@
 
       <footer class="console-footer"><span>DUAL INPUT AUDIO PATH</span><span class="footer-line"></span><span>WEB AUDIO / TIMED SINE</span><span class="footer-line"></span><span id="footerState">KEYS RELEASED</span></footer>
     </main>
-    <script src="app.js?v=key-tabs-v1"></script>
+    <script src="app.js?v=key-tabs-v2"></script>
   </body>
 </html>
