@@ -181,6 +181,11 @@
     stopCurrentTone();
   }
 
+  function isFormField(target) {
+    const tagName = target?.tagName?.toLowerCase();
+    return target?.isContentEditable || ['input', 'select', 'textarea'].includes(tagName);
+  }
+
   function setAudioFrequency() {
     if (oscillator && audioContext) oscillator.frequency.setTargetAtTime(settings.frequency, audioContext.currentTime, 0.003);
   }
@@ -223,12 +228,12 @@
   wirePaddle(ditPaddle, 'dit');
   wirePaddle(dahPaddle, 'dah');
   document.addEventListener('keydown', (event) => {
-    if (event.code === 'Space' && event.target === document.body) { event.preventDefault(); if (!event.repeat) startStraightTone(); return; }
+    if (event.code === 'Space' && !isFormField(event.target)) { event.preventDefault(); if (!event.repeat) startStraightTone(); return; }
     if (event.code === 'KeyD' || event.code === 'ArrowLeft') { event.preventDefault(); pressPaddle('dit'); }
     if (event.code === 'KeyK' || event.code === 'ArrowRight') { event.preventDefault(); pressPaddle('dah'); }
   });
   document.addEventListener('keyup', (event) => {
-    if (event.code === 'Space' && event.target === document.body && activeMode === 'straight') stopCurrentTone();
+    if (event.code === 'Space' && !isFormField(event.target) && activeMode === 'straight') stopCurrentTone();
     if (event.code === 'KeyD' || event.code === 'ArrowLeft') releasePaddle('dit');
     if (event.code === 'KeyK' || event.code === 'ArrowRight') releasePaddle('dah');
   });
