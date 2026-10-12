@@ -203,6 +203,8 @@
     paddleTab.setAttribute('aria-selected', String(paddleSelected));
     straightPanel.hidden = paddleSelected;
     paddlePanel.hidden = !paddleSelected;
+    straightPanel.classList.toggle('mode-panel-hidden', paddleSelected);
+    paddlePanel.classList.toggle('mode-panel-hidden', !paddleSelected);
     localStorage.setItem('morse-active-tab-v1', paddleSelected ? 'paddle' : 'straight');
     if (focus) (paddleSelected ? paddleTab : straightTab).focus();
   }
