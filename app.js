@@ -141,7 +141,6 @@
   }
 
   function emitPaddleElement(side) {
-    if (!heldPaddles.size && !paddleQueue.length) { paddleAdvanceTimer = null; return; }
     const ditMs = 1200 / settings.wpm;
     const duration = side === 'dit' ? ditMs : ditMs * 3;
     if (!startElement('paddle', side, duration)) return;
