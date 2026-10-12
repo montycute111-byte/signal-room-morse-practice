@@ -5,3 +5,18 @@
 @media(max-width:1100px){.console-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.control-column{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 @media(max-width:850px){.console-grid{grid-template-columns:1fr}.control-column{grid-column:auto;display:flex}.straight-key-panel,.paddle-panel{min-height:560px}}
 @media(max-width:560px){.straight-key-panel,.paddle-panel{min-height:500px}}
+
+/* Separate, keyboard-accessible tabs keep the two instruments focused. */
+.mode-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:20px}
+.mode-tab{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;text-align:left;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:#0e1418;color:var(--muted);font:inherit;cursor:pointer;transition:.18s ease;box-shadow:inset 0 1px #ffffff06}
+.mode-tab:hover{border-color:#53636a;color:var(--silver)}
+.mode-tab:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.mode-tab.active{border-color:#759c5a;background:linear-gradient(135deg,#17231c,#10181a);color:var(--text);box-shadow:inset 0 1px #d9fbbd18,0 0 24px #8ac65a12}
+.mode-tab-index{color:var(--green);font-size:10px;letter-spacing:.14em;font-weight:800}
+.mode-tab-name{font-size:11px;letter-spacing:.16em;font-weight:800}
+.mode-tab small{justify-self:end;font-size:9px;letter-spacing:.12em;color:#687980}
+.mode-tab.active small{color:#a1c986}
+.mode-panel[hidden]{display:none!important}
+.console-grid{grid-template-columns:minmax(0,1fr) 325px;align-items:stretch}
+@media(max-width:850px){.mode-tabs{margin-top:14px}.mode-tab{grid-template-columns:auto 1fr;padding:12px}.mode-tab small{grid-column:2;justify-self:start;margin-top:-7px}.console-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.mode-tabs{gap:6px}.mode-tab{gap:7px;padding:11px 9px}.mode-tab-name{font-size:9px}.mode-tab small{font-size:7px}.mode-tab-index{font-size:8px}}
