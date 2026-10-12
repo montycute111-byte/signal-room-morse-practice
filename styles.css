@@ -17,6 +17,10 @@
 .mode-tab small{justify-self:end;font-size:9px;letter-spacing:.12em;color:#687980}
 .mode-tab.active small{color:#a1c986}
 .mode-panel[hidden]{display:none!important}
-.console-grid{grid-template-columns:minmax(0,1fr) 325px;align-items:stretch}
-@media(max-width:850px){.mode-tabs{margin-top:14px}.mode-tab{grid-template-columns:auto 1fr;padding:12px}.mode-tab small{grid-column:2;justify-self:start;margin-top:-7px}.console-grid{grid-template-columns:1fr}}
+.mode-panel.mode-panel-hidden{display:none!important}
+.console-grid{grid-template-columns:minmax(0,1fr) 325px;grid-template-areas:"mode controls";align-items:stretch}
+.mode-stage{grid-area:mode;min-width:0;display:grid;grid-template:1fr / 1fr;min-height:610px}
+.mode-panel{grid-area:1 / 1;min-width:0}
+.control-column{grid-area:controls}
+@media(max-width:850px){.mode-tabs{margin-top:14px}.mode-tab{grid-template-columns:auto 1fr;padding:12px}.mode-tab small{grid-column:2;justify-self:start;margin-top:-7px}.console-grid{grid-template-columns:1fr;grid-template-areas:"mode" "controls"}.mode-stage{min-height:560px}.control-column{grid-area:controls}}
 @media(max-width:560px){.mode-tabs{gap:6px}.mode-tab{gap:7px;padding:11px 9px}.mode-tab-name{font-size:9px}.mode-tab small{font-size:7px}.mode-tab-index{font-size:8px}}
