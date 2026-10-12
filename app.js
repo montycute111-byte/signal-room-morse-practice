@@ -13,6 +13,7 @@
   const dahPaddle = $('dahPaddle');
   const shell = document.querySelector('.console-shell');
   const heldPaddles = new Set();
+  const paddleQueue = [];
   let audioContext = null;
   let oscillator = null;
   let gainNode = null;
@@ -140,13 +141,15 @@
   }
 
   function emitPaddleElement(side) {
-    if (!heldPaddles.size) { paddleAdvanceTimer = null; return; }
+    if (!heldPaddles.size && !paddleQueue.length) { paddleAdvanceTimer = null; return; }
     const ditMs = 1200 / settings.wpm;
     const duration = side === 'dit' ? ditMs : ditMs * 3;
     if (!startElement('paddle', side, duration)) return;
     paddleAdvanceTimer = window.setTimeout(() => {
       paddleAdvanceTimer = null;
-      if (heldPaddles.size) emitPaddleElement(nextPaddleSide(side));
+      const queuedSide = paddleQueue.shift();
+      const nextSide = queuedSide || (heldPaddles.size ? nextPaddleSide(side) : null);
+      if (nextSide) emitPaddleElement(nextSide);
     }, duration + ditMs);
   }
 
@@ -155,21 +158,22 @@
     if (activeMode === 'straight') stopCurrentTone();
     heldPaddles.add(side);
     updatePaddleUi();
-    if (!paddleAdvanceTimer && !activeMode) emitPaddleElement(side);
+    if (activeMode === 'paddle' || paddleAdvanceTimer) {
+      paddleQueue.push(side);
+    } else {
+      emitPaddleElement(side);
+    }
   }
 
   function releasePaddle(side) {
     heldPaddles.delete(side);
     updatePaddleUi();
-    if (!heldPaddles.size && paddleAdvanceTimer) {
-      window.clearTimeout(paddleAdvanceTimer);
-      paddleAdvanceTimer = null;
-    }
   }
 
   function startStraightTone() {
     if (activeMode === 'straight') return;
     heldPaddles.clear();
+    paddleQueue.length = 0;
     if (paddleAdvanceTimer) { window.clearTimeout(paddleAdvanceTimer); paddleAdvanceTimer = null; }
     stopCurrentTone();
     startElement('straight', 'straight', null);
@@ -177,6 +181,7 @@
 
   function stopAllInputs() {
     heldPaddles.clear();
+    paddleQueue.length = 0;
     if (paddleAdvanceTimer) { window.clearTimeout(paddleAdvanceTimer); paddleAdvanceTimer = null; }
     stopCurrentTone();
   }
