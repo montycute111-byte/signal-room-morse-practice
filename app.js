@@ -12,13 +12,15 @@
   const ditPaddle = $('ditPaddle');
   const dahPaddle = $('dahPaddle');
   const shell = document.querySelector('.console-shell');
+  const heldPaddles = new Set();
   let audioContext = null;
   let oscillator = null;
   let gainNode = null;
   let compressor = null;
   let activeMode = null;
   let activeSide = null;
-  let toneTimer = null;
+  let elementOffTimer = null;
+  let paddleAdvanceTimer = null;
 
   function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
 
@@ -70,6 +72,15 @@
     return true;
   }
 
+  function updatePaddleUi() {
+    const ditHeld = heldPaddles.has('dit');
+    const dahHeld = heldPaddles.has('dah');
+    ditPaddle.classList.toggle('held', ditHeld);
+    dahPaddle.classList.toggle('held', dahHeld);
+    ditPaddle.setAttribute('aria-pressed', String(ditHeld));
+    dahPaddle.setAttribute('aria-pressed', String(dahHeld));
+  }
+
   function setVisualState(mode, side) {
     const straightActive = mode === 'straight';
     const ditActive = mode === 'paddle' && side === 'dit';
@@ -84,46 +95,90 @@
     $('footerState').textContent = label ? `${label} PLAYING` : 'KEYS RELEASED';
     $('statusLed').setAttribute('aria-label', label ? `${label} playing` : 'Keys released');
     straightKey.setAttribute('aria-pressed', String(straightActive));
-    ditPaddle.setAttribute('aria-pressed', String(ditActive));
-    dahPaddle.setAttribute('aria-pressed', String(dahActive));
+    updatePaddleUi();
   }
 
-  function stopTone() {
-    if (toneTimer) { window.clearTimeout(toneTimer); toneTimer = null; }
-    if (!activeMode) return;
+  function fadeTone() {
+    if (!gainNode || !audioContext) return;
+    const now = audioContext.currentTime;
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setTargetAtTime(0, now, 0.006);
+  }
+
+  function stopCurrentTone() {
+    if (elementOffTimer) { window.clearTimeout(elementOffTimer); elementOffTimer = null; }
     activeMode = null;
     activeSide = null;
+    fadeTone();
     setVisualState(null, null);
-    if (gainNode && audioContext) {
-      const now = audioContext.currentTime;
-      gainNode.gain.cancelScheduledValues(now);
-      gainNode.gain.setTargetAtTime(0, now, 0.006);
+  }
+
+  function startElement(mode, side, duration) {
+    if (!ensureAudio()) return false;
+    if (elementOffTimer) window.clearTimeout(elementOffTimer);
+    activeMode = mode;
+    activeSide = side;
+    setVisualState(mode, side);
+    const now = audioContext.currentTime;
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setTargetAtTime(outputLevel(), now, 0.004);
+    if (duration) {
+      elementOffTimer = window.setTimeout(() => {
+        elementOffTimer = null;
+        fadeTone();
+        activeMode = null;
+        activeSide = null;
+        setVisualState(null, null);
+      }, duration);
+    }
+    return true;
+  }
+
+  function nextPaddleSide(previousSide) {
+    if (heldPaddles.size === 2) return previousSide === 'dit' ? 'dah' : 'dit';
+    return heldPaddles.has('dit') ? 'dit' : 'dah';
+  }
+
+  function emitPaddleElement(side) {
+    if (!heldPaddles.size) { paddleAdvanceTimer = null; return; }
+    const ditMs = 1200 / settings.wpm;
+    const duration = side === 'dit' ? ditMs : ditMs * 3;
+    if (!startElement('paddle', side, duration)) return;
+    paddleAdvanceTimer = window.setTimeout(() => {
+      paddleAdvanceTimer = null;
+      if (heldPaddles.size) emitPaddleElement(nextPaddleSide(side));
+    }, duration + ditMs);
+  }
+
+  function pressPaddle(side) {
+    if (heldPaddles.has(side)) return;
+    if (activeMode === 'straight') stopCurrentTone();
+    heldPaddles.add(side);
+    updatePaddleUi();
+    if (!paddleAdvanceTimer && !activeMode) emitPaddleElement(side);
+  }
+
+  function releasePaddle(side) {
+    heldPaddles.delete(side);
+    updatePaddleUi();
+    if (!heldPaddles.size && paddleAdvanceTimer) {
+      window.clearTimeout(paddleAdvanceTimer);
+      paddleAdvanceTimer = null;
     }
   }
 
   function startStraightTone() {
-    if (!ensureAudio() || activeMode === 'straight') return;
-    stopTone();
-    activeMode = 'straight';
-    activeSide = 'straight';
-    setVisualState(activeMode, activeSide);
-    const now = audioContext.currentTime;
-    gainNode.gain.cancelScheduledValues(now);
-    gainNode.gain.setTargetAtTime(outputLevel(), now, 0.004);
+    if (activeMode === 'straight') return;
+    heldPaddles.clear();
+    if (paddleAdvanceTimer) { window.clearTimeout(paddleAdvanceTimer); paddleAdvanceTimer = null; }
+    stopCurrentTone();
+    startElement('straight', 'straight', null);
   }
 
-  function playPaddle(side) {
-    if (!ensureAudio()) return;
-    stopTone();
-    activeMode = 'paddle';
-    activeSide = side;
-    setVisualState(activeMode, activeSide);
-    const now = audioContext.currentTime;
-    const ditMs = 1200 / settings.wpm;
-    const duration = side === 'dit' ? ditMs : ditMs * 3;
-    gainNode.gain.cancelScheduledValues(now);
-    gainNode.gain.setTargetAtTime(outputLevel(), now, 0.004);
-    toneTimer = window.setTimeout(stopTone, duration);
+  function stopAllInputs() {
+    heldPaddles.clear();
+    if (paddleAdvanceTimer) { window.clearTimeout(paddleAdvanceTimer); paddleAdvanceTimer = null; }
+    stopCurrentTone();
   }
 
   function setAudioFrequency() {
@@ -139,63 +194,49 @@
     setAudioFrequency();
     persist();
   });
-
-  $('speedSlider').addEventListener('input', (event) => {
-    settings.wpm = Number(event.target.value);
-    $('speedOutput').textContent = `${settings.wpm} WPM`;
-    setRangeFill(event.target);
-    persist();
-  });
-
-  $('volumeSlider').addEventListener('input', (event) => {
-    settings.volume = Number(event.target.value);
-    $('volumeOutput').textContent = `${settings.volume}%`;
-    setRangeFill(event.target);
-    if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004);
-    persist();
-  });
-
-  $('muteToggle').addEventListener('change', (event) => {
-    settings.muted = event.target.checked;
-    if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004);
-    persist();
-  });
+  $('speedSlider').addEventListener('input', (event) => { settings.wpm = Number(event.target.value); $('speedOutput').textContent = `${settings.wpm} WPM`; setRangeFill(event.target); persist(); });
+  $('volumeSlider').addEventListener('input', (event) => { settings.volume = Number(event.target.value); $('volumeOutput').textContent = `${settings.volume}%`; setRangeFill(event.target); if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004); persist(); });
+  $('muteToggle').addEventListener('change', (event) => { settings.muted = event.target.checked; if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004); persist(); });
 
   straightKey.addEventListener('pointerdown', (event) => { event.preventDefault(); straightKey.setPointerCapture?.(event.pointerId); startStraightTone(); });
-  straightKey.addEventListener('pointerup', stopTone);
-  straightKey.addEventListener('pointercancel', stopTone);
-  straightKey.addEventListener('keydown', (event) => {
-    if (event.code !== 'Space' && event.code !== 'Enter') return;
-    event.preventDefault();
-    if (!event.repeat) startStraightTone();
-  });
-  straightKey.addEventListener('keyup', (event) => { if (event.code === 'Space' || event.code === 'Enter') stopTone(); });
+  straightKey.addEventListener('pointerup', () => { if (activeMode === 'straight') stopCurrentTone(); });
+  straightKey.addEventListener('pointercancel', () => { if (activeMode === 'straight') stopCurrentTone(); });
+  straightKey.addEventListener('keydown', (event) => { if (event.code !== 'Space' && event.code !== 'Enter') return; event.preventDefault(); if (!event.repeat) startStraightTone(); });
+  straightKey.addEventListener('keyup', (event) => { if ((event.code === 'Space' || event.code === 'Enter') && activeMode === 'straight') stopCurrentTone(); });
 
   function wirePaddle(button, side) {
-    button.addEventListener('pointerdown', (event) => { event.preventDefault(); button.setPointerCapture?.(event.pointerId); playPaddle(side); });
+    button.addEventListener('pointerdown', (event) => { event.preventDefault(); button.setPointerCapture?.(event.pointerId); pressPaddle(side); });
+    button.addEventListener('pointerup', () => releasePaddle(side));
+    button.addEventListener('pointercancel', () => releasePaddle(side));
     button.addEventListener('keydown', (event) => {
-      if (event.repeat) return;
       const valid = side === 'dit' ? ['KeyD', 'ArrowLeft'] : ['KeyK', 'ArrowRight'];
       if (!valid.includes(event.code)) return;
       event.preventDefault();
-      playPaddle(side);
+      pressPaddle(side);
+    });
+    button.addEventListener('keyup', (event) => {
+      const valid = side === 'dit' ? ['KeyD', 'ArrowLeft'] : ['KeyK', 'ArrowRight'];
+      if (valid.includes(event.code)) releasePaddle(side);
     });
   }
 
   wirePaddle(ditPaddle, 'dit');
   wirePaddle(dahPaddle, 'dah');
-
   document.addEventListener('keydown', (event) => {
-    if (event.code === 'Space' && event.target === document.body) { event.preventDefault(); if (!event.repeat) startStraightTone(); }
-    if (event.repeat) return;
-    if (event.code === 'KeyD' || event.code === 'ArrowLeft') { event.preventDefault(); playPaddle('dit'); }
-    if (event.code === 'KeyK' || event.code === 'ArrowRight') { event.preventDefault(); playPaddle('dah'); }
+    if (event.code === 'Space' && event.target === document.body) { event.preventDefault(); if (!event.repeat) startStraightTone(); return; }
+    if (event.code === 'KeyD' || event.code === 'ArrowLeft') { event.preventDefault(); pressPaddle('dit'); }
+    if (event.code === 'KeyK' || event.code === 'ArrowRight') { event.preventDefault(); pressPaddle('dah'); }
   });
-  document.addEventListener('keyup', (event) => { if (event.code === 'Space' && event.target === document.body) stopTone(); });
-  ['blur', 'pagehide'].forEach((eventName) => window.addEventListener(eventName, stopTone));
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stopTone(); });
+  document.addEventListener('keyup', (event) => {
+    if (event.code === 'Space' && event.target === document.body && activeMode === 'straight') stopCurrentTone();
+    if (event.code === 'KeyD' || event.code === 'ArrowLeft') releasePaddle('dit');
+    if (event.code === 'KeyK' || event.code === 'ArrowRight') releasePaddle('dah');
+  });
+  ['blur', 'pagehide'].forEach((eventName) => window.addEventListener(eventName, stopAllInputs));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopAllInputs(); });
   [straightKey, ditPaddle, dahPaddle].forEach((button) => button.addEventListener('contextmenu', (event) => event.preventDefault()));
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
   updateSettingsUi();
+  updatePaddleUi();
 })();
