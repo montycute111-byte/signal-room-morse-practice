@@ -21,8 +21,17 @@
         <div class="header-readout"><span class="readout-label">TONE</span><strong id="headerFrequency">600</strong><span>Hz</span><i id="statusLed" class="status-led" aria-label="Keys released"></i><span id="statusText">READY</span></div>
       </header>
 
+      <nav class="mode-tabs" role="tablist" aria-label="Morse key mode">
+        <button id="straightTab" class="mode-tab active" type="button" role="tab" aria-selected="true" aria-controls="straightPanel">
+          <span class="mode-tab-index">01</span><span class="mode-tab-name">STRAIGHT KEY</span><small>MANUAL TIMING</small>
+        </button>
+        <button id="paddleTab" class="mode-tab" type="button" role="tab" aria-selected="false" aria-controls="paddlePanel">
+          <span class="mode-tab-index">02</span><span class="mode-tab-name">DUAL PADDLE</span><small>IAMBIC KEYER</small>
+        </button>
+      </nav>
+
       <section class="console-grid" aria-label="Morse key practice station">
-        <section class="key-panel panel straight-key-panel">
+        <section id="straightPanel" class="key-panel panel mode-panel straight-key-panel" role="tabpanel" aria-labelledby="straightTab">
           <div class="panel-topline"><span class="panel-label">STRAIGHT KEY</span><span class="panel-code">SK-01 / HOLD TO SOUND</span></div>
           <div class="key-stage straight-stage">
             <div class="key-shadow" aria-hidden="true"></div>
@@ -37,7 +46,7 @@
           <div class="input-hints"><span><kbd>SPACE</kbd> hold</span><span>manual timing</span></div>
         </section>
 
-        <section class="key-panel panel paddle-panel">
+        <section id="paddlePanel" class="key-panel panel mode-panel paddle-panel" role="tabpanel" aria-labelledby="paddleTab" hidden>
           <div class="panel-topline"><span class="panel-label">DUAL PADDLE</span><span class="panel-code">DP-600 / IAMBIC</span></div>
           <div class="key-stage paddle-stage">
             <div class="paddle-shadow" aria-hidden="true"></div>
