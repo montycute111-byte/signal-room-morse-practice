@@ -1,4 +1,4 @@
-const CACHE = 'dual-paddle-v1';
+const CACHE = 'morse-keys-v2';
 const ASSETS = ['./', './index.html', './styles.css', './paddle.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {
