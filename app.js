@@ -11,6 +11,10 @@
   const straightKey = $('straightKey');
   const ditPaddle = $('ditPaddle');
   const dahPaddle = $('dahPaddle');
+  const straightTab = $('straightTab');
+  const paddleTab = $('paddleTab');
+  const straightPanel = $('straightPanel');
+  const paddlePanel = $('paddlePanel');
   const shell = document.querySelector('.console-shell');
   const heldPaddles = new Set();
   const paddleQueue = [];
@@ -190,6 +194,19 @@
     return target?.isContentEditable || ['input', 'select', 'textarea'].includes(tagName);
   }
 
+  function selectMode(mode, { focus = false } = {}) {
+    const paddleSelected = mode === 'paddle';
+    stopAllInputs();
+    straightTab.classList.toggle('active', !paddleSelected);
+    paddleTab.classList.toggle('active', paddleSelected);
+    straightTab.setAttribute('aria-selected', String(!paddleSelected));
+    paddleTab.setAttribute('aria-selected', String(paddleSelected));
+    straightPanel.hidden = paddleSelected;
+    paddlePanel.hidden = !paddleSelected;
+    localStorage.setItem('morse-active-tab-v1', paddleSelected ? 'paddle' : 'straight');
+    if (focus) (paddleSelected ? paddleTab : straightTab).focus();
+  }
+
   function setAudioFrequency() {
     if (oscillator && audioContext) oscillator.frequency.setTargetAtTime(settings.frequency, audioContext.currentTime, 0.003);
   }
@@ -245,7 +262,19 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopAllInputs(); });
   [straightKey, ditPaddle, dahPaddle].forEach((button) => button.addEventListener('contextmenu', (event) => event.preventDefault()));
 
+  straightTab.addEventListener('click', () => selectMode('straight'));
+  paddleTab.addEventListener('click', () => selectMode('paddle'));
+  [straightTab, paddleTab].forEach((tab) => tab.addEventListener('keydown', (event) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === 'Home' || (event.key === 'ArrowLeft' && tab === paddleTab)) selectMode('straight', { focus: true });
+    else if (event.key === 'End' || (event.key === 'ArrowRight' && tab === straightTab)) selectMode('paddle', { focus: true });
+  }));
+
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+  let savedMode = 'straight';
+  try { savedMode = localStorage.getItem('morse-active-tab-v1') === 'paddle' ? 'paddle' : 'straight'; } catch {}
+  selectMode(savedMode);
   updateSettingsUi();
   updatePaddleUi();
 })();
