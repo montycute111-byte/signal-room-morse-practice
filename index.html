@@ -4,39 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0d10" />
-    <meta name="description" content="A dual-paddle Morse code practice oscillator." />
+    <meta name="description" content="A Morse code practice station with a straight key and dual paddle." />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="paddle.css" />
-    <title>Dual Paddle . Practice Oscillator</title>
+    <title>Morse Keys . Straight + Dual Paddle</title>
   </head>
   <body>
     <main class="console-shell">
       <header class="console-header">
         <div class="brand-lockup">
           <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
-          <div><p class="eyebrow">DUAL PADDLE PRACTICE OSCILLATOR</p><h1>Paddle Key</h1></div>
+          <div><p class="eyebrow">MORSE KEY PRACTICE STATION</p><h1>Straight Key + Dual Paddle</h1></div>
         </div>
-        <div class="header-readout"><span class="readout-label">TONE</span><strong id="headerFrequency">600</strong><span>Hz</span><i id="statusLed" class="status-led" aria-label="Paddle released"></i><span id="statusText">READY</span></div>
+        <div class="header-readout"><span class="readout-label">TONE</span><strong id="headerFrequency">600</strong><span>Hz</span><i id="statusLed" class="status-led" aria-label="Keys released"></i><span id="statusText">READY</span></div>
       </header>
 
-      <section class="console-grid" aria-label="Dual paddle Morse key console">
-        <section class="key-panel panel">
+      <section class="console-grid" aria-label="Morse key practice station">
+        <section class="key-panel panel straight-key-panel">
+          <div class="panel-topline"><span class="panel-label">STRAIGHT KEY</span><span class="panel-code">SK-01 / HOLD TO SOUND</span></div>
+          <div class="key-stage straight-stage">
+            <div class="key-shadow" aria-hidden="true"></div>
+            <button id="straightKey" class="telegraph-key" type="button" aria-label="Straight key. Hold to send a tone" aria-pressed="false">
+              <span class="key-base"><span class="base-edge"></span><i class="mount mount-left"></i><i class="mount mount-right"></i><i class="adjuster adjuster-left"></i><i class="adjuster adjuster-right"></i></span>
+              <span class="key-post post-left"><i class="post-cap"></i></span><span class="key-post post-right"><i class="post-cap"></i></span>
+              <span class="lever"><i class="lever-brace"></i><i class="knob"><b class="knob-highlight"></b></i></span>
+              <span class="contact-screw"><i></i></span>
+            </button>
+            <div class="key-caption"><span class="caption-dot"></span><span>HOLD THE KEY</span><span class="caption-dot"></span></div>
+          </div>
+          <div class="input-hints"><span><kbd>SPACE</kbd> hold</span><span>manual timing</span></div>
+        </section>
+
+        <section class="key-panel panel paddle-panel">
           <div class="panel-topline"><span class="panel-label">DUAL PADDLE</span><span class="panel-code">DP-600 / IAMBIC</span></div>
           <div class="key-stage paddle-stage">
             <div class="paddle-shadow" aria-hidden="true"></div>
             <div class="paddle-instrument" role="group" aria-label="Dual Morse paddle">
-              <div class="paddle-post paddle-post-left"><span></span></div>
-              <div class="paddle-post paddle-post-right"><span></span></div>
-              <button id="ditPaddle" class="paddle paddle-dit" type="button" aria-label="Dit paddle. Press to send a short tone">
-                <span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DIT</span><small>D / â†</small>
-              </button>
-              <button id="dahPaddle" class="paddle paddle-dah" type="button" aria-label="Dah paddle. Press to send a long tone">
-                <span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DAH</span><small>K / â†’</small>
-              </button>
-              <div class="paddle-center"><span class="center-pin"></span><span class="center-ring"></span></div>
-              <div class="paddle-base"><span class="base-edge"></span><i></i><i></i></div>
+              <div class="paddle-post paddle-post-left"><span></span></div><div class="paddle-post paddle-post-right"><span></span></div>
+              <button id="ditPaddle" class="paddle paddle-dit" type="button" aria-label="Dit paddle. Press to send a short tone" aria-pressed="false"><span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DIT</span><small>D / â†</small></button>
+              <button id="dahPaddle" class="paddle paddle-dah" type="button" aria-label="Dah paddle. Press to send a long tone" aria-pressed="false"><span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DAH</span><small>K / â†’</small></button>
+              <div class="paddle-center"><span class="center-pin"></span><span class="center-ring"></span></div><div class="paddle-base"><span class="base-edge"></span><i></i><i></i></div>
             </div>
             <div class="key-caption"><span class="caption-dot"></span><span>TAP A PADDLE</span><span class="caption-dot"></span></div>
           </div>
@@ -47,30 +56,24 @@
           <section class="control-panel panel">
             <div class="panel-topline"><span class="panel-label">OSCILLATOR</span><span class="online-mark"><i></i> ONLINE</span></div>
             <div class="frequency-readout"><span id="frequencyDisplay">600</span><small>Hz</small></div>
-            <label class="control-label" for="frequencySlider"><span>Frequency</span><output id="frequencyOutput">600 Hz</output></label>
-            <input id="frequencySlider" type="range" min="300" max="1000" step="1" value="600" />
-            <div class="range-endpoints"><span>300</span><span>1,000</span></div>
+            <label class="control-label" for="frequencySlider"><span>Frequency</span><output id="frequencyOutput">600 Hz</output></label><input id="frequencySlider" type="range" min="300" max="1000" step="1" value="600" /><div class="range-endpoints"><span>300</span><span>1,000</span></div>
             <div class="control-divider"></div>
-            <label class="control-label" for="speedSlider"><span>Paddle speed</span><output id="speedOutput">12 WPM</output></label>
-            <input id="speedSlider" type="range" min="5" max="30" step="1" value="12" />
-            <div class="range-endpoints"><span>slow</span><span>fast</span></div>
+            <label class="control-label" for="speedSlider"><span>Paddle speed</span><output id="speedOutput">12 WPM</output></label><input id="speedSlider" type="range" min="5" max="30" step="1" value="12" /><div class="range-endpoints"><span>slow</span><span>fast</span></div>
             <div class="control-divider"></div>
-            <label class="control-label" for="volumeSlider"><span>Volume</span><output id="volumeOutput">60%</output></label>
-            <input id="volumeSlider" type="range" min="0" max="100" step="1" value="60" />
-            <div class="range-endpoints"><span>quiet</span><span>full</span></div>
+            <label class="control-label" for="volumeSlider"><span>Volume</span><output id="volumeOutput">60%</output></label><input id="volumeSlider" type="range" min="0" max="100" step="1" value="60" /><div class="range-endpoints"><span>quiet</span><span>full</span></div>
             <label class="mute-row"><input id="muteToggle" type="checkbox" /><span class="toggle-rail"><i></i></span><span>Mute output</span></label>
           </section>
-
           <section class="guide-panel panel">
-            <div class="panel-topline"><span class="panel-label">OPERATOR NOTES</span><span class="panel-code">TIMED CONTACTS</span></div>
-            <div class="guide-row"><span class="guide-icon">I</span><p>Tap the left paddle.<br /><b>It sends one short dit.</b></p></div>
-            <div class="guide-row"><span class="guide-icon">II</span><p>Tap the right paddle.<br /><b>It sends one long dah.</b></p></div>
-            <div class="guide-row"><span class="guide-icon">III</span><p>Use D / K or the arrow keys.<br /><b>Build the rhythm yourself.</b></p></div>
+            <div class="panel-topline"><span class="panel-label">OPERATOR NOTES</span><span class="panel-code">TWO WAYS TO SEND</span></div>
+            <div class="guide-row"><span class="guide-icon">I</span><p>Hold the straight key.<br /><b>Make your own timing.</b></p></div>
+            <div class="guide-row"><span class="guide-icon">II</span><p>Tap the left paddle.<br /><b>It sends one short dit.</b></p></div>
+            <div class="guide-row"><span class="guide-icon">III</span><p>Tap the right paddle.<br /><b>It sends one long dah.</b></p></div>
+            <div class="guide-row"><span class="guide-icon">IV</span><p>Use Space, D / K, or arrows.<br /><b>Switch between both keys.</b></p></div>
           </section>
         </aside>
       </section>
 
-      <footer class="console-footer"><span>PADDLE AUDIO PATH</span><span class="footer-line"></span><span>WEB AUDIO / TIMED SINE</span><span class="footer-line"></span><span id="footerState">PADDLE RELEASED</span></footer>
+      <footer class="console-footer"><span>DUAL INPUT AUDIO PATH</span><span class="footer-line"></span><span>WEB AUDIO / TIMED SINE</span><span class="footer-line"></span><span id="footerState">KEYS RELEASED</span></footer>
     </main>
     <script src="app.js"></script>
   </body>
