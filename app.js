@@ -26,6 +26,16 @@
   let activeSide = null;
   let elementOffTimer = null;
   let paddleAdvanceTimer = null;
+  const sosOverlay = $('sosOverlay');
+  const sosDismiss = $('sosDismiss');
+  const sosMessages = [...sosOverlay.querySelectorAll('.sos-messages li')];
+  const transmissionElements = [];
+  let liveTransmissionElement = null;
+  let lastElementEndAt = null;
+  let sosTriggeredForTransmission = false;
+  let sosOverlayActive = false;
+  let sosOverlayTimers = [];
+  let sosClosingTimer = null;
 
   function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
 
@@ -86,6 +96,130 @@
     dahPaddle.setAttribute('aria-pressed', String(dahHeld));
   }
 
+  function morseDitMs() { return 1200 / Math.max(5, settings.wpm); }
+
+  function beginTransmissionElement(mode, side) {
+    const startedAt = performance.now();
+    const gapBeforeMs = lastElementEndAt === null ? null : startedAt - lastElementEndAt;
+    if (gapBeforeMs !== null && gapBeforeMs > morseDitMs() * 2.7) {
+      transmissionElements.length = 0;
+      sosTriggeredForTransmission = false;
+    }
+    liveTransmissionElement = { mode, side, startedAt, gapBeforeMs };
+  }
+
+  function median(values) {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+  }
+
+  function groupedDurationsAreConsistent(values) {
+    const shortest = Math.min(...values);
+    const longest = Math.max(...values);
+    return shortest > 0 && longest / shortest <= 1.8;
+  }
+
+  function isSosCandidate() {
+    if (transmissionElements.length < 9) return false;
+    const candidate = transmissionElements.slice(-9);
+    if (candidate.some((element) => element.mode !== candidate[0].mode)) return false;
+    if (candidate.slice(1).some((element) => element.gapBeforeMs === null)) return false;
+
+    const shortDurations = [...candidate.slice(0, 3), ...candidate.slice(6)].map((element) => element.durationMs);
+    const longDurations = candidate.slice(3, 6).map((element) => element.durationMs);
+    const shortUnit = median(shortDurations);
+    const gapLimit = candidate[0].mode === 'paddle' ? morseDitMs() * 2.25 : shortUnit * 2.35;
+    const continuous = candidate.slice(1).every((element) => element.gapBeforeMs <= gapLimit);
+    if (!continuous) return false;
+
+    if (candidate[0].mode === 'paddle') {
+      return candidate.map((element) => element.side).join('') === 'ditditditdahdahdahditditdit';
+    }
+
+    return groupedDurationsAreConsistent(candidate.slice(0, 3).map((element) => element.durationMs))
+      && groupedDurationsAreConsistent(candidate.slice(3, 6).map((element) => element.durationMs))
+      && groupedDurationsAreConsistent(candidate.slice(6).map((element) => element.durationMs))
+      && median(longDurations) >= shortUnit * 2.15;
+  }
+
+  function finishTransmissionElement(endedAt = performance.now()) {
+    if (!liveTransmissionElement) return;
+    const element = {
+      ...liveTransmissionElement,
+      endedAt,
+      durationMs: Math.max(0, endedAt - liveTransmissionElement.startedAt),
+    };
+    liveTransmissionElement = null;
+    lastElementEndAt = endedAt;
+    transmissionElements.push(element);
+    if (transmissionElements.length > 24) transmissionElements.shift();
+    if (isSosCandidate() && !sosTriggeredForTransmission) {
+      sosTriggeredForTransmission = true;
+      showSosEasterEgg();
+    }
+  }
+
+  function playStaticBurst() {
+    if (settings.muted || !ensureAudio()) return;
+    const sampleRate = audioContext.sampleRate;
+    const duration = 0.36;
+    const buffer = audioContext.createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let index = 0; index < data.length; index += 1) {
+      const fade = Math.min(1, index / (sampleRate * 0.025), (data.length - index) / (sampleRate * 0.04));
+      data[index] = (Math.random() * 2 - 1) * fade;
+    }
+    const source = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const staticGain = audioContext.createGain();
+    source.buffer = buffer;
+    filter.type = 'bandpass';
+    filter.frequency.value = 1500;
+    filter.Q.value = 0.65;
+    staticGain.gain.value = 0.11;
+    source.connect(filter).connect(staticGain).connect(compressor || audioContext.destination);
+    source.start();
+  }
+
+  function clearSosOverlayTimers() {
+    sosOverlayTimers.forEach((timer) => window.clearTimeout(timer));
+    sosOverlayTimers = [];
+    if (sosClosingTimer) { window.clearTimeout(sosClosingTimer); sosClosingTimer = null; }
+  }
+
+  function dismissSosEasterEgg() {
+    if (!sosOverlayActive) return;
+    clearSosOverlayTimers();
+    sosOverlay.classList.add('is-closing');
+    const closingDelay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 430;
+    sosClosingTimer = window.setTimeout(() => {
+      sosOverlay.hidden = true;
+      sosOverlay.setAttribute('aria-hidden', 'true');
+      sosOverlay.classList.remove('is-closing');
+      document.body.classList.remove('sos-easter-egg-active');
+      sosOverlayActive = false;
+      sosClosingTimer = null;
+    }, closingDelay);
+  }
+
+  function showSosEasterEgg() {
+    if (sosOverlayActive) return;
+    clearSosOverlayTimers();
+    sosOverlayActive = true;
+    sosOverlay.hidden = false;
+    sosOverlay.setAttribute('aria-hidden', 'false');
+    sosOverlay.classList.remove('is-closing');
+    document.body.classList.add('sos-easter-egg-active');
+    sosMessages.forEach((message) => message.classList.remove('is-visible'));
+    playStaticBurst();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    sosMessages.forEach((message, index) => {
+      sosOverlayTimers.push(window.setTimeout(() => message.classList.add('is-visible'), reducedMotion ? 0 : 420 + index * 560));
+    });
+    sosOverlayTimers.push(window.setTimeout(dismissSosEasterEgg, reducedMotion ? 5000 : 5200));
+    sosDismiss.focus({ preventScroll: true });
+  }
+
   function setVisualState(mode, side) {
     const straightActive = mode === 'straight';
     const ditActive = mode === 'paddle' && side === 'dit';
@@ -112,6 +246,7 @@
 
   function stopCurrentTone() {
     if (elementOffTimer) { window.clearTimeout(elementOffTimer); elementOffTimer = null; }
+    finishTransmissionElement();
     activeMode = null;
     activeSide = null;
     fadeTone();
@@ -121,6 +256,7 @@
   function startElement(mode, side, duration) {
     if (!ensureAudio()) return false;
     if (elementOffTimer) window.clearTimeout(elementOffTimer);
+    beginTransmissionElement(mode, side);
     activeMode = mode;
     activeSide = side;
     setVisualState(mode, side);
@@ -130,6 +266,7 @@
     if (duration) {
       elementOffTimer = window.setTimeout(() => {
         elementOffTimer = null;
+        finishTransmissionElement();
         fadeTone();
         activeMode = null;
         activeSide = null;
@@ -225,6 +362,13 @@
   $('speedSlider').addEventListener('input', (event) => { settings.wpm = Number(event.target.value); $('speedOutput').textContent = `${settings.wpm} WPM`; setRangeFill(event.target); persist(); });
   $('volumeSlider').addEventListener('input', (event) => { settings.volume = Number(event.target.value); $('volumeOutput').textContent = `${settings.volume}%`; setRangeFill(event.target); if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004); persist(); });
   $('muteToggle').addEventListener('change', (event) => { settings.muted = event.target.checked; if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004); persist(); });
+  sosDismiss.addEventListener('click', dismissSosEasterEgg);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && sosOverlayActive) {
+      event.preventDefault();
+      dismissSosEasterEgg();
+    }
+  });
 
   straightKey.addEventListener('pointerdown', (event) => { event.preventDefault(); straightKey.setPointerCapture?.(event.pointerId); startStraightTone(); });
   straightKey.addEventListener('pointerup', () => { if (activeMode === 'straight') stopCurrentTone(); });
