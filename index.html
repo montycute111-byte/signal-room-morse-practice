@@ -7,7 +7,7 @@
     <meta name="description" content="A Morse code practice station with a straight key and dual paddle." />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=key-tabs-v2" />
+    <link rel="stylesheet" href="styles.css?v=key-tabs-v3" />
     <link rel="stylesheet" href="paddle.css" />
     <title>Morse Keys . Straight + Dual Paddle</title>
   </head>
@@ -53,8 +53,8 @@
             <div class="paddle-shadow" aria-hidden="true"></div>
             <div class="paddle-instrument" role="group" aria-label="Dual Morse paddle">
               <div class="paddle-post paddle-post-left"><span></span></div><div class="paddle-post paddle-post-right"><span></span></div>
-              <button id="ditPaddle" class="paddle paddle-dit" type="button" aria-label="Dit paddle. Hold to repeat dits" aria-pressed="false"><span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DIT</span><small>D / ←</small></button>
-              <button id="dahPaddle" class="paddle paddle-dah" type="button" aria-label="Dah paddle. Hold to repeat dahs" aria-pressed="false"><span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DAH</span><small>K / →</small></button>
+              <button id="ditPaddle" class="paddle paddle-dit" type="button" aria-label="Dit paddle. Hold to repeat dits" aria-pressed="false"><span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DIT</span><small>D / â†</small></button>
+              <button id="dahPaddle" class="paddle paddle-dah" type="button" aria-label="Dah paddle. Hold to repeat dahs" aria-pressed="false"><span class="paddle-blade"></span><span class="paddle-grip"></span><span class="paddle-label">DAH</span><small>K / â†’</small></button>
               <div class="paddle-center"><span class="center-pin"></span><span class="center-ring"></span></div><div class="paddle-base"><span class="base-edge"></span><i></i><i></i></div>
             </div>
             <div class="key-caption"><span class="caption-dot"></span><span>TAP A PADDLE</span><span class="caption-dot"></span></div>
@@ -86,6 +86,27 @@
 
       <footer class="console-footer"><span>DUAL INPUT AUDIO PATH</span><span class="footer-line"></span><span>WEB AUDIO / TIMED SINE</span><span class="footer-line"></span><span id="footerState">KEYS RELEASED</span></footer>
     </main>
-    <script src="app.js?v=key-tabs-v2"></script>
+
+    <div id="sosOverlay" class="sos-overlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="sosTitle">
+      <div class="sos-scanlines" aria-hidden="true"></div>
+      <div class="sos-beacon sos-beacon-left" aria-hidden="true"></div>
+      <div class="sos-beacon sos-beacon-right" aria-hidden="true"></div>
+      <section class="sos-terminal" role="document">
+        <div class="sos-terminal-bar"><span class="sos-terminal-dot"></span><span>EMERGENCY COMMUNICATIONS TERMINAL</span><span class="sos-terminal-status">FICTIONAL SIMULATION</span></div>
+        <div class="sos-alert-mark" aria-hidden="true">ðŸš¨</div>
+        <p class="sos-kicker">PRIORITY // DISTRESS CHANNEL 01</p>
+        <h2 id="sosTitle">ðŸš¨ DISTRESS SIGNAL DETECTED ðŸš¨</h2>
+        <div class="sos-signal" aria-label="Morse prosign SOS">... --- ...</div>
+        <ol class="sos-messages" aria-live="polite">
+          <li>INCOMING DISTRESS TRANSMISSION...</li>
+          <li>MORSE PROSIGN: SOS</li>
+          <li>SIGNAL IDENTIFIED</li>
+          <li>RESCUE DISPATCHED</li>
+        </ol>
+        <p class="sos-fictional-note">FICTIONAL EASTER EGG Â· NO REAL EMERGENCY DISPATCH</p>
+        <button id="sosDismiss" class="sos-dismiss" type="button">DISMISS SIGNAL <kbd>ESC</kbd></button>
+      </section>
+    </div>
+    <script src="app.js?v=key-tabs-v3"></script>
   </body>
 </html>
