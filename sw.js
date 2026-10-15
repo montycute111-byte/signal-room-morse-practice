@@ -1,4 +1,4 @@
-const CACHE = 'morse-keys-v8';
+const CACHE = 'morse-keys-v9';
 const ASSETS = ['./', './index.html', './styles.css', './paddle.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {
