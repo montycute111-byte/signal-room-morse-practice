@@ -13,8 +13,10 @@
   const dahPaddle = $('dahPaddle');
   const straightTab = $('straightTab');
   const paddleTab = $('paddleTab');
+  const sentenceTab = $('sentenceTab');
   const straightPanel = $('straightPanel');
   const paddlePanel = $('paddlePanel');
+  const sentencePanel = $('sentencePanel');
   const shell = document.querySelector('.console-shell');
   const heldPaddles = new Set();
   const paddleQueue = [];
@@ -36,6 +38,62 @@
   let sosOverlayActive = false;
   let sosOverlayTimers = [];
   let sosClosingTimer = null;
+  const sentenceLibrary = {
+    short: [
+      'The lamp is bright.', 'Waves move slowly.', 'Keep the key steady.', 'Rain taps the roof.', 'The train is late.',
+      'Clouds cover the moon.', 'Turn left at dawn.', 'Practice makes progress.', 'The signal is clear.', 'Birds cross the sky.',
+      'Listen for the tone.', 'Warm hands before sending.', 'The cabin feels quiet.', 'Small steps build skill.', 'Good signals travel far.',
+    ],
+    medium: [
+      'The quiet station waits beside the river.', 'Send each character with a steady rhythm.', 'A cool breeze moves through the open window.', 'The morning operator checks every connection twice.', 'Clear timing makes difficult letters easier to hear.',
+      'The old radio glows beside a cup of tea.', 'Leave enough space between letters and words.', 'A patient hand can make beautiful Morse code.', 'The signal fades slowly beyond the distant hills.', 'Tonight the band is calm and wonderfully quiet.',
+      'Keep listening even when the pattern feels unfamiliar.', 'The small antenna reaches across the sleeping town.', 'A steady pace is better than a hurried one.', 'The receiver comes alive after sunset each evening.', 'Write down the rhythm that feels most natural.',
+    ],
+    long: [
+      'The operator waited patiently while the distant station returned a faint reply.', 'Every careful transmission begins with a comfortable pace and a relaxed hand.', 'Across the quiet valley, the evening signal carried farther than anyone expected.', 'When the band becomes crowded, listening closely helps each character remain distinct.', 'A good practice session leaves room for mistakes without turning them into pressure.',
+      'The old notebook held years of signals, weather reports, and friendly conversations.', 'Before sending a long message, take a breath and settle into the rhythm.', 'The lighthouse keeper heard the familiar call just before the storm arrived.', 'A strong operator knows that clear spacing is just as important as speed.', 'The radio room stayed warm while rain moved steadily across the dark roof.',
+      'With every relaxed repetition, the movement between dits and dahs becomes more natural.', 'The message crossed several quiet bands before reaching the waiting listening post.', 'Some of the best practice happens when there is no one keeping score.', 'The patient listener recognized the final word and smiled at the completed transmission.', 'Use the next sentence whenever you are ready, whether the current one is finished or not.',
+    ],
+  };
+  let sentenceCategory = 'random';
+  let currentSentence = '';
+  let sentenceSessionCount = 1;
+  let sentenceMorse = '';
+  let livePracticeSymbolIndex = null;
+  let activeKeyMode = 'straight';
+
+  function pickSentence() {
+    const pool = sentenceCategory === 'random'
+      ? Object.values(sentenceLibrary).flat()
+      : sentenceLibrary[sentenceCategory];
+    const choices = pool.filter((sentence) => sentence !== currentSentence);
+    currentSentence = (choices.length ? choices : pool)[Math.floor(Math.random() * (choices.length ? choices : pool).length)];
+    sentenceMorse = '';
+    livePracticeSymbolIndex = null;
+    $('practiceSentence').textContent = currentSentence;
+    $('sentenceMorseOutput').textContent = 'READY';
+    $('sentenceSessionCount').textContent = `SESSION SENTENCE ${sentenceSessionCount}`;
+    $('sentenceProgress').textContent = `SENTENCE ${sentenceSessionCount} · PRACTICE ONLY`;
+  }
+
+  function updateSentenceMorse() {
+    $('sentenceMorseOutput').textContent = sentenceMorse || 'READY';
+  }
+
+  function markSentenceElementStarted(mode, side) {
+    if (sentencePanel.hidden) return;
+    sentenceMorse += mode === 'paddle' ? (side === 'dit' ? '.' : '-') : '·';
+    livePracticeSymbolIndex = sentenceMorse.length - 1;
+    updateSentenceMorse();
+  }
+
+  function finalizeSentenceElement(element) {
+    if (sentencePanel.hidden || livePracticeSymbolIndex === null) return;
+    const symbol = element.durationMs >= morseDitMs() * 2.1 ? '-' : '.';
+    sentenceMorse = `${sentenceMorse.slice(0, livePracticeSymbolIndex)}${symbol}${sentenceMorse.slice(livePracticeSymbolIndex + 1)}`;
+    livePracticeSymbolIndex = null;
+    updateSentenceMorse();
+  }
 
   function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
 
@@ -152,6 +210,7 @@
     liveTransmissionElement = null;
     lastElementEndAt = endedAt;
     transmissionElements.push(element);
+    finalizeSentenceElement(element);
     if (transmissionElements.length > 24) transmissionElements.shift();
     if (isSosCandidate() && !sosTriggeredForTransmission) {
       sosTriggeredForTransmission = true;
@@ -259,6 +318,7 @@
     beginTransmissionElement(mode, side);
     activeMode = mode;
     activeSide = side;
+    markSentenceElementStarted(mode, side);
     setVisualState(mode, side);
     const now = audioContext.currentTime;
     gainNode.gain.cancelScheduledValues(now);
@@ -332,18 +392,25 @@
   }
 
   function selectMode(mode, { focus = false } = {}) {
+    const sentenceSelected = mode === 'sentence';
     const paddleSelected = mode === 'paddle';
     stopAllInputs();
-    straightTab.classList.toggle('active', !paddleSelected);
+    straightTab.classList.toggle('active', !paddleSelected && !sentenceSelected);
     paddleTab.classList.toggle('active', paddleSelected);
-    straightTab.setAttribute('aria-selected', String(!paddleSelected));
+    sentenceTab.classList.toggle('active', sentenceSelected);
+    straightTab.setAttribute('aria-selected', String(!paddleSelected && !sentenceSelected));
     paddleTab.setAttribute('aria-selected', String(paddleSelected));
-    straightPanel.hidden = paddleSelected;
-    paddlePanel.hidden = !paddleSelected;
-    straightPanel.classList.toggle('mode-panel-hidden', paddleSelected);
-    paddlePanel.classList.toggle('mode-panel-hidden', !paddleSelected);
-    localStorage.setItem('morse-active-tab-v1', paddleSelected ? 'paddle' : 'straight');
-    if (focus) (paddleSelected ? paddleTab : straightTab).focus();
+    sentenceTab.setAttribute('aria-selected', String(sentenceSelected));
+    straightPanel.hidden = paddleSelected || sentenceSelected;
+    paddlePanel.hidden = !paddleSelected || sentenceSelected;
+    sentencePanel.hidden = !sentenceSelected;
+    straightPanel.classList.toggle('mode-panel-hidden', paddleSelected || sentenceSelected);
+    paddlePanel.classList.toggle('mode-panel-hidden', !paddleSelected || sentenceSelected);
+    sentencePanel.classList.toggle('mode-panel-hidden', !sentenceSelected);
+    if (!sentenceSelected) activeKeyMode = paddleSelected ? 'paddle' : 'straight';
+    localStorage.setItem('morse-active-tab-v2', mode);
+    localStorage.setItem('morse-active-tab-v1', activeKeyMode);
+    if (focus) (sentenceSelected ? sentenceTab : paddleSelected ? paddleTab : straightTab).focus();
   }
 
   function setAudioFrequency() {
@@ -362,6 +429,16 @@
   $('speedSlider').addEventListener('input', (event) => { settings.wpm = Number(event.target.value); $('speedOutput').textContent = `${settings.wpm} WPM`; setRangeFill(event.target); persist(); });
   $('volumeSlider').addEventListener('input', (event) => { settings.volume = Number(event.target.value); $('volumeOutput').textContent = `${settings.volume}%`; setRangeFill(event.target); if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004); persist(); });
   $('muteToggle').addEventListener('change', (event) => { settings.muted = event.target.checked; if (activeMode && gainNode && audioContext) gainNode.gain.setTargetAtTime(outputLevel(), audioContext.currentTime, 0.004); persist(); });
+  document.querySelectorAll('.sentence-category').forEach((button) => button.addEventListener('click', () => {
+    sentenceCategory = button.dataset.category;
+    document.querySelectorAll('.sentence-category').forEach((categoryButton) => {
+      const selected = categoryButton === button;
+      categoryButton.classList.toggle('active', selected);
+      categoryButton.setAttribute('aria-pressed', String(selected));
+    });
+    pickSentence();
+  }));
+  $('nextSentence').addEventListener('click', () => { sentenceSessionCount += 1; pickSentence(); });
   sosDismiss.addEventListener('click', dismissSosEasterEgg);
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && sosOverlayActive) {
@@ -410,16 +487,25 @@
 
   straightTab.addEventListener('click', () => selectMode('straight'));
   paddleTab.addEventListener('click', () => selectMode('paddle'));
-  [straightTab, paddleTab].forEach((tab) => tab.addEventListener('keydown', (event) => {
+  sentenceTab.addEventListener('click', () => selectMode('sentence'));
+  [straightTab, paddleTab, sentenceTab].forEach((tab) => tab.addEventListener('keydown', (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    if (event.key === 'Home' || (event.key === 'ArrowLeft' && tab === paddleTab)) selectMode('straight', { focus: true });
-    else if (event.key === 'End' || (event.key === 'ArrowRight' && tab === straightTab)) selectMode('paddle', { focus: true });
+    const tabs = [straightTab, paddleTab, sentenceTab];
+    const modes = ['straight', 'paddle', 'sentence'];
+    const currentIndex = tabs.indexOf(tab);
+    const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    selectMode(modes[nextIndex], { focus: true });
   }));
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
   let savedMode = 'straight';
-  try { savedMode = localStorage.getItem('morse-active-tab-v1') === 'paddle' ? 'paddle' : 'straight'; } catch {}
+  try {
+    const storedMode = localStorage.getItem('morse-active-tab-v2');
+    savedMode = ['straight', 'paddle', 'sentence'].includes(storedMode) ? storedMode : (localStorage.getItem('morse-active-tab-v1') === 'paddle' ? 'paddle' : 'straight');
+    activeKeyMode = savedMode === 'paddle' ? 'paddle' : 'straight';
+  } catch {}
+  pickSentence();
   selectMode(savedMode);
   updateSettingsUi();
   updatePaddleUi();
