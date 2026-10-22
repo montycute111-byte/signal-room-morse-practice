@@ -58,8 +58,6 @@
   let sentenceCategory = 'random';
   let currentSentence = '';
   let sentenceSessionCount = 1;
-  let sentenceMorse = '';
-  let livePracticeSymbolIndex = null;
   let activeKeyMode = 'straight';
 
   function pickSentence() {
@@ -68,31 +66,9 @@
       : sentenceLibrary[sentenceCategory];
     const choices = pool.filter((sentence) => sentence !== currentSentence);
     currentSentence = (choices.length ? choices : pool)[Math.floor(Math.random() * (choices.length ? choices : pool).length)];
-    sentenceMorse = '';
-    livePracticeSymbolIndex = null;
     $('practiceSentence').textContent = currentSentence;
-    $('sentenceMorseOutput').textContent = 'READY';
     $('sentenceSessionCount').textContent = `SESSION SENTENCE ${sentenceSessionCount}`;
     $('sentenceProgress').textContent = `SENTENCE ${sentenceSessionCount} · PRACTICE ONLY`;
-  }
-
-  function updateSentenceMorse() {
-    $('sentenceMorseOutput').textContent = sentenceMorse || 'READY';
-  }
-
-  function markSentenceElementStarted(mode, side) {
-    if (sentencePanel.hidden) return;
-    sentenceMorse += mode === 'paddle' ? (side === 'dit' ? '.' : '-') : '·';
-    livePracticeSymbolIndex = sentenceMorse.length - 1;
-    updateSentenceMorse();
-  }
-
-  function finalizeSentenceElement(element) {
-    if (sentencePanel.hidden || livePracticeSymbolIndex === null) return;
-    const symbol = element.durationMs >= morseDitMs() * 2.1 ? '-' : '.';
-    sentenceMorse = `${sentenceMorse.slice(0, livePracticeSymbolIndex)}${symbol}${sentenceMorse.slice(livePracticeSymbolIndex + 1)}`;
-    livePracticeSymbolIndex = null;
-    updateSentenceMorse();
   }
 
   function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
@@ -210,7 +186,6 @@
     liveTransmissionElement = null;
     lastElementEndAt = endedAt;
     transmissionElements.push(element);
-    finalizeSentenceElement(element);
     if (transmissionElements.length > 24) transmissionElements.shift();
     if (isSosCandidate() && !sosTriggeredForTransmission) {
       sosTriggeredForTransmission = true;
@@ -318,7 +293,6 @@
     beginTransmissionElement(mode, side);
     activeMode = mode;
     activeSide = side;
-    markSentenceElementStarted(mode, side);
     setVisualState(mode, side);
     const now = audioContext.currentTime;
     gainNode.gain.cancelScheduledValues(now);
