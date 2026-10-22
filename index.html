@@ -7,7 +7,7 @@
     <meta name="description" content="A Morse code practice station with a straight key and dual paddle." />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=key-tabs-v3" />
+    <link rel="stylesheet" href="styles.css?v=mobile-v1" />
     <link rel="stylesheet" href="paddle.css" />
     <title>Morse Keys . Straight + Dual Paddle</title>
   </head>
@@ -27,6 +27,9 @@
         </button>
         <button id="paddleTab" class="mode-tab" type="button" role="tab" aria-selected="false" aria-controls="paddlePanel">
           <span class="mode-tab-index">02</span><span class="mode-tab-name">DUAL PADDLE</span><small>IAMBIC KEYER</small>
+        </button>
+        <button id="sentenceTab" class="mode-tab" type="button" role="tab" aria-selected="false" aria-controls="sentencePanel">
+          <span class="mode-tab-index">03</span><span class="mode-tab-name">SENTENCE PRACTICE</span><small>RELAXED SENDING</small>
         </button>
       </nav>
 
@@ -60,6 +63,29 @@
             <div class="key-caption"><span class="caption-dot"></span><span>TAP A PADDLE</span><span class="caption-dot"></span></div>
           </div>
           <div class="input-hints"><span><kbd>D</kbd> hold dit</span><span><kbd>K</kbd> hold dah</span><span>both = alternate</span></div>
+        </section>
+        <section id="sentencePanel" class="key-panel panel mode-panel sentence-panel" role="tabpanel" aria-labelledby="sentenceTab" hidden>
+          <div class="panel-topline"><span class="panel-label">SENTENCE PRACTICE</span><span id="sentenceSessionCount" class="panel-code">SESSION SENTENCE 1</span></div>
+          <div class="sentence-practice-body">
+            <div class="sentence-category-row" role="group" aria-label="Sentence length">
+              <button class="sentence-category active" type="button" data-category="random" aria-pressed="true">RANDOM</button>
+              <button class="sentence-category" type="button" data-category="short" aria-pressed="false">SHORT</button>
+              <button class="sentence-category" type="button" data-category="medium" aria-pressed="false">MEDIUM</button>
+              <button class="sentence-category" type="button" data-category="long" aria-pressed="false">LONG</button>
+            </div>
+            <div class="sentence-card">
+              <p class="sentence-kicker">TRANSMIT THIS SENTENCE</p>
+              <p id="practiceSentence" class="practice-sentence" tabindex="0"></p>
+              <div class="sentence-morse-readout" aria-live="polite">
+                <span>LIVE MORSE</span><code id="sentenceMorseOutput">READY</code>
+              </div>
+            </div>
+            <div class="sentence-actions">
+              <button id="nextSentence" class="next-sentence" type="button">NEXT SENTENCE <span aria-hidden="true">↗</span></button>
+              <span id="sentenceProgress" class="sentence-progress">SENTENCE 1 · PRACTICE ONLY</span>
+            </div>
+            <p class="sentence-note">No accuracy checking, scoring, or corrections. Use the selected key and move on whenever you’re ready.</p>
+          </div>
         </section>
         </div>
 
@@ -107,6 +133,6 @@
         <button id="sosDismiss" class="sos-dismiss" type="button">DISMISS SIGNAL <kbd>ESC</kbd></button>
       </section>
     </div>
-    <script src="app.js?v=key-tabs-v3"></script>
+    <script src="app.js?v=sentence-v1"></script>
   </body>
 </html>
